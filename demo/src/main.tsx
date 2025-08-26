@@ -9,14 +9,13 @@ Sentry.init({
   integrations: [
     sentryZarazIntegration({
       timeout: 10000, // Wait up to 10 seconds for consent
-      debug: true, // Enable debug logging
+      debug: false, // Disable debug logging for production
     }),
     Sentry.browserTracingIntegration(),
-    Sentry.consoleLoggingIntegration({ levels: ['error'] }),
   ],
   sendDefaultPii: true,
-  environment: 'development',
-  tracesSampleRate: 1.0,
+  environment: 'production',
+  tracesSampleRate: 0.1, // Reduced sample rate for production
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

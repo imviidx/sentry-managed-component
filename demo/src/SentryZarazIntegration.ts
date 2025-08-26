@@ -1,4 +1,4 @@
-import type { Event, EventHint, Integration } from '@sentry/types';
+import type { Event, EventHint } from '@sentry/react';
 import { getZaraz, isSentryManagedComponentEnabled } from './lib/zaraz';
 
 export interface SentryZarazIntegrationOptions {
@@ -15,9 +15,9 @@ export interface SentryZarazIntegrationOptions {
   debug?: boolean;
 }
 
-export class SentryZarazIntegration implements Integration {
+class SentryZarazIntegrationClass {
   public static id = 'SentryZarazIntegration';
-  public name = SentryZarazIntegration.id;
+  public name = SentryZarazIntegrationClass.id;
 
   private options: Required<SentryZarazIntegrationOptions>;
   private isConsentReady = false;
@@ -34,39 +34,30 @@ export class SentryZarazIntegration implements Integration {
     };
   }
 
-  public setupOnce(
-    addGlobalEventProcessor?: (
-      callback: (event: Event, hint?: EventHint) => Event | null
-    ) => void,
-    getCurrentHub?: () => any
-  ): void {
+  public setupOnce(): void {
     this.log('Setting up Sentry Zaraz Integration');
 
     // Start monitoring for consent
     this.initializeConsentMonitoring();
 
-    // Add global event processor to handle consent if the function is available
-    if (addGlobalEventProcessor) {
-      addGlobalEventProcessor((event: Event, hint?: EventHint) => {
-        return this.processEvent(event, hint);
-      });
-    } else {
-      // Fallback: try to access Sentry's global addGlobalEventProcessor
-      setTimeout(() => {
-        const Sentry = (window as any).Sentry || (globalThis as any).Sentry;
-        if (Sentry && Sentry.addGlobalEventProcessor) {
-          Sentry.addGlobalEventProcessor((event: Event, hint?: EventHint) => {
-            return this.processEvent(event, hint);
-          });
-        }
-      }, 100);
-    }
+    // Since we can't add global event processors in setupOnce for newer Sentry,
+    // we'll use the processEvent method which is called automatically
   }
 
-  private processEvent(event: Event, hint?: EventHint): Event | null {
+  public processEvent(
+    event: Event,
+    hint: EventHint,
+    _client?: any
+  ): Event | null | PromiseLike<Event | null> {
     // If consent is ready and we have consent, allow the event
     if (this.isConsentReady && this.hasConsent) {
       this.log('Event allowed - consent granted');
+      // Ensure logentry.params is string[] if present
+      if (event.logentry && event.logentry.params) {
+        event.logentry.params = Array.isArray(event.logentry.params)
+          ? event.logentry.params.map((p) => String(p))
+          : undefined;
+      }
       return event;
     }
 
@@ -204,8 +195,7 @@ export class SentryZarazIntegration implements Integration {
               Sentry.captureException(error);
             })
             .catch(() => {
-              // Fallback: just log the error
-              console.error('Failed to re-capture queued error:', error);
+              // Silently fail in production
             });
         } else if (event.message) {
           // For message events
@@ -217,10 +207,7 @@ export class SentryZarazIntegration implements Integration {
               );
             })
             .catch(() => {
-              console.log(
-                'Failed to re-capture queued message:',
-                event.message
-              );
+              // Silently fail in production
             });
         } else {
           // For other event types, try to use captureEvent if available
@@ -231,7 +218,7 @@ export class SentryZarazIntegration implements Integration {
               }
             })
             .catch(() => {
-              console.log('Failed to re-capture queued event:', event);
+              // Silently fail in production
             });
         }
       } else {
@@ -265,6 +252,14 @@ export class SentryZarazIntegration implements Integration {
  */
 export function sentryZarazIntegration(
   options?: SentryZarazIntegrationOptions
-): SentryZarazIntegration {
-  return new SentryZarazIntegration(options);
+) {
+  const integration = new SentryZarazIntegrationClass(options);
+
+  return {
+    name: integration.name,
+    setupOnce: () => integration.setupOnce(),
+    processEvent: (event: Event, hint: EventHint, client?: any) =>
+      integration.processEvent(event, hint, client),
+    cleanup: () => integration.cleanup(),
+  };
 }

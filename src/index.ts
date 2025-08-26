@@ -1,9 +1,8 @@
 import { ComponentSettings, Manager } from '@managed-components/types';
 
 interface ConsentState {
-  analytics?: boolean;
-  performance?: boolean;
   functional?: boolean;
+  analytics?: boolean;
   marketing?: boolean;
   preferences?: boolean;
 }
@@ -171,96 +170,80 @@ export default async function (manager: Manager, settings: ComponentSettings) {
               newOptions.captureUnhandledRejections = false;
               console.log('[Sentry CM] Disabled core tracking features due to functional consent withdrawal');
             } else {
-              newOptions.autoSessionTracking = originalConfig.autoSessionTracking !== undefined ? originalConfig.autoSessionTracking : ${
-                settings['core_integration.auto_session_tracking'] || true
-              };
-              newOptions.captureUnhandledRejections = originalConfig.captureUnhandledRejections !== undefined ? originalConfig.captureUnhandledRejections : ${
-                settings['core_integration.capture_unhandled_rejections'] ||
-                true
-              };
+              // Use original developer configuration when consent is granted
+              newOptions.autoSessionTracking = originalConfig.autoSessionTracking;
+              newOptions.captureUnhandledRejections = originalConfig.captureUnhandledRejections;
             }
 
-            // Analytics consent - affects PII and detailed tracking
+            // Analytics consent - affects performance monitoring and metrics
             if (!consent.analytics) {
-              newOptions.sendDefaultPii = false;
-              console.log('[Sentry CM] Disabled PII collection due to analytics consent withdrawal');
-            } else {
-              newOptions.sendDefaultPii = originalConfig.sendDefaultPii !== undefined ? originalConfig.sendDefaultPii : ${
-                settings['core_integration.send_default_pii'] || true
-              };
-            }
-
-            // Performance consent - affects performance monitoring and profiling
-            if (!consent.performance) {
               newOptions.tracesSampleRate = 0;
               newOptions.profilesSampleRate = 0;
-              console.log('[Sentry CM] Disabled performance monitoring due to performance consent withdrawal');
+              console.log('[Sentry CM] Disabled performance monitoring due to analytics consent withdrawal');
             } else {
-              newOptions.tracesSampleRate = originalConfig.tracesSampleRate !== undefined ? originalConfig.tracesSampleRate : (${
-                settings['performance_integration.enable_performance'] || true
-              } ? 1.0 : 0);
-              newOptions.profilesSampleRate = originalConfig.profilesSampleRate !== undefined ? originalConfig.profilesSampleRate : (${
-                settings['performance_integration.enable_profiling'] || true
-              } ? 1.0 : 0);
+              // Use original developer configuration when consent is granted
+              newOptions.tracesSampleRate = originalConfig.tracesSampleRate;
+              newOptions.profilesSampleRate = originalConfig.profilesSampleRate;
             }
 
-            // Marketing consent - affects session replay
+            // Marketing consent - affects session replay and user behavior tracking
             if (!consent.marketing) {
               newOptions.replaysSessionSampleRate = 0;
               newOptions.replaysOnErrorSampleRate = 0;
               console.log('[Sentry CM] Disabled session replay due to marketing consent withdrawal');
             } else {
-              newOptions.replaysSessionSampleRate = ${
-                settings['replay_integration.enable_replay'] || true
-              } ? 0.1 : 0;
-              newOptions.replaysOnErrorSampleRate = ${
-                settings['replay_integration.enable_replay'] || true
-              } ? 1.0 : 0;
+              // Use original developer configuration when consent is granted
+              newOptions.replaysSessionSampleRate = originalConfig.replaysSessionSampleRate;
+              newOptions.replaysOnErrorSampleRate = originalConfig.replaysOnErrorSampleRate;
             }
 
-            // Update integrations based on consent
-            const integrations = [];
-            const integrationNames = originalConfig.integrations || [];
-
-            // Always include error handling if functional consent is given
-            if (consent.functional) {
-              integrationNames.forEach(name => {
-                if (['GlobalHandlers', 'TryCatch', 'LinkedErrors'].includes(name)) {
-                  // These are core error handling integrations - keep them
-                  const integration = currentOptions.integrations?.find(i => (i.name || i.constructor.name) === name);
-                  if (integration) integrations.push(integration);
-                }
-              });
+            // Preferences consent - affects PII and personalized tracking
+            if (!consent.preferences) {
+              newOptions.sendDefaultPii = false;
+              console.log('[Sentry CM] Disabled PII collection due to preferences consent withdrawal');
+            } else {
+              // Use original developer configuration when consent is granted
+              newOptions.sendDefaultPii = originalConfig.sendDefaultPii;
             }
 
-            // Performance integrations
-            if (consent.performance) {
-              integrationNames.forEach(name => {
-                if (['BrowserTracing', 'BrowserProfilingIntegration'].includes(name)) {
-                  const integration = currentOptions.integrations?.find(i => (i.name || i.constructor.name) === name);
-                  if (integration) integrations.push(integration);
-                }
+            // Update integrations based on consent - filter out restricted integrations
+            let integrations = [...(currentOptions.integrations || [])];
+
+            // Remove integrations based on consent withdrawal
+            if (!consent.functional) {
+              // Remove core error handling integrations when functional consent is withdrawn
+              integrations = integrations.filter(integration => {
+                const name = integration.name || integration.constructor.name;
+                return !['GlobalHandlers', 'TryCatch', 'LinkedErrors', 'Breadcrumbs', 'HttpContext'].includes(name);
               });
+              console.log('[Sentry CM] Removed core integrations due to functional consent withdrawal');
             }
 
-            // Analytics integrations (breadcrumbs, etc.)
-            if (consent.analytics) {
-              integrationNames.forEach(name => {
-                if (['Breadcrumbs', 'HttpContext', 'Dedupe'].includes(name)) {
-                  const integration = currentOptions.integrations?.find(i => (i.name || i.constructor.name) === name);
-                  if (integration) integrations.push(integration);
-                }
+            if (!consent.analytics) {
+              // Remove performance monitoring integrations when analytics consent is withdrawn
+              integrations = integrations.filter(integration => {
+                const name = integration.name || integration.constructor.name;
+                return !['BrowserTracing', 'BrowserProfilingIntegration'].includes(name);
               });
+              console.log('[Sentry CM] Removed analytics integrations due to analytics consent withdrawal');
             }
 
-            // Marketing integrations (replay)
-            if (consent.marketing) {
-              integrationNames.forEach(name => {
-                if (['Replay'].includes(name)) {
-                  const integration = currentOptions.integrations?.find(i => (i.name || i.constructor.name) === name);
-                  if (integration) integrations.push(integration);
-                }
+            if (!consent.marketing) {
+              // Remove replay integrations when marketing consent is withdrawn
+              integrations = integrations.filter(integration => {
+                const name = integration.name || integration.constructor.name;
+                return !['Replay'].includes(name);
               });
+              console.log('[Sentry CM] Removed marketing integrations due to marketing consent withdrawal');
+            }
+
+            if (!consent.preferences) {
+              // Remove personalization integrations when preferences consent is withdrawn
+              integrations = integrations.filter(integration => {
+                const name = integration.name || integration.constructor.name;
+                return !['Dedupe'].includes(name);
+              });
+              console.log('[Sentry CM] Removed preferences integrations due to preferences consent withdrawal');
             }
 
             newOptions.integrations = integrations;
