@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/react';
-import { isSentryManagedComponentEnabled } from '../lib/zaraz';
+import { isSentryManagedComponentEnabledDemo } from '../lib/zaraz';
 import { logSentryEvent } from '../lib/eventLogger';
 
 interface SentryRecordingStateProps {
@@ -33,7 +33,7 @@ const SentryRecordingState: React.FC<SentryRecordingStateProps> = ({
   useEffect(() => {
     const checkRecordingState = () => {
       try {
-        const hasSentryConsent = isSentryManagedComponentEnabled();
+        const hasSentryConsent = isSentryManagedComponentEnabledDemo();
         const client = (Sentry as any).getCurrentHub?.()?.getClient?.();
 
         setSentryClient(client);

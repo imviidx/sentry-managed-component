@@ -1,5 +1,37 @@
 # Custom Purpose Mapping Configuration
 
+The `SentryZarazInteg```typescript
+import { sentryZarazIntegration } from './SentryZarazIntegration';
+
+// Use completely different purpose IDs
+const sentryIntegration = sentryZarazIntegration({
+purposeMapping: {
+functional: 'my-functional-purpose',
+analytics: 'my-analytics-purpose',
+marketing: 'my-marketing-purpose',
+preferences: 'my-preferences-purpose',
+}
+});
+
+````
+
+### Example 3: Using with Sentry SDKuires a purpose mapping configuration to specify which Zaraz consent purposes are used for different consent types.
+
+## Purpose Mapping Configuration
+
+The purpose mapping is **required** and must match your Zaraz consent configuration. By default, this demo uses these purpose IDs:
+
+```typescript
+const PURPOSE_MAPPING = {
+  functional: 'lFDj',  // Functional (Essential/Necessary)
+  analytics: 'yybb',   // Analytics (Performance & Statistics)
+  marketing: 'rlae',   // Marketing (Advertising & Personalization)
+  preferences: 'hfWn', // Preferences (Personalization & Settings)
+};
+````
+
+## Usage Examplesping Configuration
+
 The `SentryZarazIntegration` now supports configurable purpose mappings, allowing you to customize which Zaraz consent purposes are used for different consent types.
 
 ## Default Purpose Mapping
@@ -19,7 +51,25 @@ const DEFAULT_PURPOSE_MAPPING = {
 
 You can override the default purpose mapping by providing a custom `purposeMapping` option:
 
-### Example 1: Custom Functional Purpose ID
+### Example 1: Basic Usage
+
+```typescript
+import { sentryZarazIntegration } from './SentryZarazIntegration';
+
+// Purpose mapping is required
+const sentryIntegration = sentryZarazIntegration({
+  debug: true,
+  timeout: 15000,
+  purposeMapping: {
+    functional: 'lFDj', // Your functional purpose ID
+    analytics: 'yybb', // Your analytics purpose ID
+    marketing: 'rlae', // Your marketing purpose ID
+    preferences: 'hfWn', // Your preferences purpose ID
+  },
+});
+```
+
+### Example 2: Different Purpose IDs
 
 ```typescript
 import { sentryZarazIntegration } from './SentryZarazIntegration';

@@ -2,10 +2,6 @@ import type { Event, EventHint } from '@sentry/react';
 import {
   getZaraz,
   isSentryManagedComponentEnabled,
-  ZARAZ_FUNCTIONAL_PURPOSE_ID,
-  ZARAZ_ANALYTICS_PURPOSE_ID,
-  ZARAZ_MARKETING_PURPOSE_ID,
-  ZARAZ_PREFERENCES_PURPOSE_ID,
   type PurposeMapping,
 } from './lib/zaraz';
 import { logSentryEvent } from './lib/eventLogger';
@@ -27,10 +23,10 @@ export interface SentryZarazIntegrationOptions {
   debug?: boolean;
 
   /**
-   * Custom purpose mapping for Zaraz consent purposes
-   * @default Uses default Zaraz purpose IDs
+   * Purpose mapping for Zaraz consent purposes
+   * This is required and must match your Zaraz configuration
    */
-  purposeMapping?: PurposeMapping;
+  purposeMapping: PurposeMapping;
 }
 
 class SentryZarazIntegrationClass {
@@ -44,16 +40,10 @@ class SentryZarazIntegrationClass {
   private timeoutId: NodeJS.Timeout | null = null;
   private consentCheckInterval: NodeJS.Timeout | null = null;
 
-  constructor(options: SentryZarazIntegrationOptions = {}) {
+  constructor(options: SentryZarazIntegrationOptions) {
     this.options = {
       timeout: 10000,
       debug: false,
-      purposeMapping: {
-        functional: ZARAZ_FUNCTIONAL_PURPOSE_ID,
-        analytics: ZARAZ_ANALYTICS_PURPOSE_ID,
-        marketing: ZARAZ_MARKETING_PURPOSE_ID,
-        preferences: ZARAZ_PREFERENCES_PURPOSE_ID,
-      },
       ...options,
     };
   }
@@ -305,9 +295,7 @@ class SentryZarazIntegrationClass {
 /**
  * Creates a new Sentry Zaraz Integration instance for use in integrations array
  */
-export function sentryZarazIntegration(
-  options?: SentryZarazIntegrationOptions
-) {
+export function sentryZarazIntegration(options: SentryZarazIntegrationOptions) {
   const integration = new SentryZarazIntegrationClass(options);
 
   return {

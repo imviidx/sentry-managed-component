@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/react';
 import {
-  isSentryManagedComponentEnabled,
-  getConsentStatus,
-  ZARAZ_FUNCTIONAL_PURPOSE_ID,
+  isSentryManagedComponentEnabledDemo,
+  getConsentStatusDemo,
+  DEMO_PURPOSE_MAPPING,
 } from '../lib/zaraz';
 import { logSentryEvent } from '../lib/eventLogger';
 
@@ -30,8 +30,8 @@ const SentryStatus: React.FC<SentryStatusProps> = ({ isZarazAvailable }) => {
     const checkSentryStatus = () => {
       try {
         const prevHasSentryConsent = hasSentryConsent;
-        const newHasSentryConsent = isSentryManagedComponentEnabled();
-        const consentStatusFromZaraz = getConsentStatus();
+        const newHasSentryConsent = isSentryManagedComponentEnabledDemo();
+        const consentStatusFromZaraz = getConsentStatusDemo();
         const newFunctionalConsent = consentStatusFromZaraz.functional ?? false;
 
         // Log state changes
@@ -39,12 +39,12 @@ const SentryStatus: React.FC<SentryStatusProps> = ({ isZarazAvailable }) => {
           if (newHasSentryConsent) {
             logSentryEvent('Sentry started', {
               functionalConsent: newFunctionalConsent,
-              purposeId: ZARAZ_FUNCTIONAL_PURPOSE_ID,
+              purposeId: DEMO_PURPOSE_MAPPING.functional,
             });
           } else {
             logSentryEvent('Sentry stopped', {
               reason: 'Functional consent revoked',
-              purposeId: ZARAZ_FUNCTIONAL_PURPOSE_ID,
+              purposeId: DEMO_PURPOSE_MAPPING.functional,
             });
           }
         }
@@ -208,7 +208,7 @@ const SentryStatus: React.FC<SentryStatusProps> = ({ isZarazAvailable }) => {
         <div>
           <strong>Purpose ID:</strong>{' '}
           <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-            {ZARAZ_FUNCTIONAL_PURPOSE_ID}
+            {DEMO_PURPOSE_MAPPING.functional}
           </span>
         </div>
       </div>

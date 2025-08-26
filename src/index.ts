@@ -1,4 +1,4 @@
-import { ComponentSettings, Manager } from '@managed-components/types';
+import { ComponentSettings, Manager, Client } from '@managed-components/types';
 
 interface ConsentState {
   functional?: boolean;
@@ -133,7 +133,7 @@ export default async function (manager: Manager, settings: ComponentSettings) {
   });
 
   // Extract consent update logic into a separate function
-  function updateSentryConsent(client: any, consentState: ConsentState) {
+  function updateSentryConsent(client: Client, consentState: ConsentState) {
     client.execute(
       `console.log("consentState",${JSON.stringify(consentState)})`
     );

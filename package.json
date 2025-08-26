@@ -10,7 +10,7 @@
     "build": "npm run lint && npm run typecheck && npm run bundle",
     "release": "npm run build && npm version patch && npm publish",
     "typecheck": "tsc --project tsconfig.build.json --noEmit",
-    "publish": "npx managed-component-to-cloudflare-worker ./components/sentry-managed-component/index.js sentry-managed-component",
+    "publish": "npm run build && npm version patch && npx managed-component-to-cloudflare-worker ./components/sentry-managed-component/index.js sentry-managed-component",
     "demo:dev": "vite demo --config demo/vite.config.ts",
     "demo:build": "vite build demo --config demo/vite.config.ts",
     "demo:preview": "vite preview demo --config demo/vite.config.ts",

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   getZaraz,
-  getConsentStatus,
-  setConsent,
-  ZARAZ_FUNCTIONAL_PURPOSE_ID,
+  getConsentStatusDemo,
+  setConsentDemo,
+  DEMO_PURPOSE_MAPPING,
 } from '../lib/zaraz';
 import { logZarazEvent, logConsentEvent } from '../lib/eventLogger';
 
@@ -61,7 +61,7 @@ const ConsentManager: React.FC = () => {
           });
         }
 
-        const consentStatusFromZaraz = getConsentStatus();
+        const consentStatusFromZaraz = getConsentStatusDemo();
         const prevConsentState = consentStatus.consentState;
         const consentState = {
           functional: consentStatusFromZaraz.functional ?? false,
@@ -138,7 +138,7 @@ const ConsentManager: React.FC = () => {
       changed: 'manual',
     });
 
-    setConsent({
+    setConsentDemo({
       ...consentStatus.consentState,
       [type]: newValue,
     });
@@ -367,7 +367,7 @@ const ConsentManager: React.FC = () => {
 
                 // Get current consent status for this purpose
                 const purposeConsent =
-                  id === ZARAZ_FUNCTIONAL_PURPOSE_ID
+                  id === DEMO_PURPOSE_MAPPING.functional
                     ? consentStatus.consentState.functional
                     : purpose?.category === 'analytics'
                       ? consentStatus.consentState.analytics
@@ -386,7 +386,7 @@ const ConsentManager: React.FC = () => {
                       backgroundColor: '#f8f9fa',
                       borderRadius: '6px',
                       border:
-                        id === ZARAZ_FUNCTIONAL_PURPOSE_ID
+                        id === DEMO_PURPOSE_MAPPING.functional
                           ? '2px solid #007bff'
                           : '1px solid #dee2e6',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -418,7 +418,7 @@ const ConsentManager: React.FC = () => {
                         >
                           {purposeConsent ? 'GRANTED' : 'DENIED'}
                         </span>
-                        {id === ZARAZ_FUNCTIONAL_PURPOSE_ID && (
+                        {id === DEMO_PURPOSE_MAPPING.functional && (
                           <span
                             style={{
                               padding: '0.15rem 0.4rem',
