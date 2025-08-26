@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as Sentry from '@sentry/react';
 import ConsentManager from './components/ConsentManager';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const App: React.FC = () => {
   const [count, setCount] = useState(0);
@@ -27,7 +28,9 @@ const App: React.FC = () => {
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
       <h1>Sentry Managed Component Demo</h1>
 
-      <ConsentManager />
+      <ErrorBoundary>
+        <ConsentManager />
+      </ErrorBoundary>
 
       <div style={{ marginBottom: '2rem' }}>
         <h2>Error Tracking Demo</h2>

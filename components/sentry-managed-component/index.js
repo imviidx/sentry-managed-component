@@ -65,7 +65,7 @@ var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Co
           console.info('[Sentry CM] Expected: window.Sentry to be available with getCurrentHub() method');
         }
       })();
-    `)}),o.addEventListener("consent",async n=>{let{client:e,payload:t}=n;a=t,r(e,a)}),o.addEventListener("clientcreated",({client:n})=>{n.execute(`CM Settings: ${JSON.stringify(i)}`),n.execute(`
+    `)}),o.addEventListener("consent",async n=>{let{client:e,payload:t}=n;a=t,r(e,a)}),o.addEventListener("clientcreated",({client:n})=>{n.execute(`console.log("CM Settings:", ${JSON.stringify(i)})`),n.execute(`
       (function() {
         // Check for stored consent state from DOM events
         if (window.__consentState) {

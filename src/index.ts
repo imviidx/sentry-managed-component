@@ -109,7 +109,7 @@ export default async function (manager: Manager, settings: ComponentSettings) {
 
   // Check for stored consent state on client creation and set up update function
   manager.addEventListener('clientcreated', ({ client }) => {
-    client.execute(`CM Settings: ${JSON.stringify(settings)}`);
+    client.execute(`console.log("CM Settings:", ${JSON.stringify(settings)})`);
 
     client.execute(`
       (function() {

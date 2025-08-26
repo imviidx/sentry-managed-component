@@ -37,26 +37,49 @@ const ConsentManager: React.FC = () => {
   useEffect(() => {
     // Check consent status periodically
     const checkConsentStatus = () => {
-      const zaraz = getZaraz();
-      const isZarazAvailable = !!zaraz;
-      const isAPIReady = !!zaraz?.consent?.APIReady;
-      const hasSentryConsent = isSentryManagedComponentEnabled();
-      const consentStatusFromZaraz = getConsentStatus();
-      const consentState = {
-        functional: consentStatusFromZaraz.functional ?? false,
-        analytics: consentStatusFromZaraz.analytics ?? false,
-        marketing: consentStatusFromZaraz.marketing ?? false,
-        preferences: consentStatusFromZaraz.preferences ?? false,
-      };
-      const allPurposes = zaraz?.consent?.purposes || {};
+      try {
+        const zaraz = getZaraz();
+        const isZarazAvailable = !!zaraz;
+        const isAPIReady = !!zaraz?.consent?.APIReady;
+        const hasSentryConsent = isSentryManagedComponentEnabled();
+        const consentStatusFromZaraz = getConsentStatus();
+        const consentState = {
+          functional: consentStatusFromZaraz.functional ?? false,
+          analytics: consentStatusFromZaraz.analytics ?? false,
+          marketing: consentStatusFromZaraz.marketing ?? false,
+          preferences: consentStatusFromZaraz.preferences ?? false,
+        };
+        const allPurposes = zaraz?.consent?.purposes || {};
 
-      setConsentStatus({
-        isZarazAvailable,
-        isAPIReady,
-        hasSentryConsent,
-        consentState,
-        allPurposes,
-      });
+        // Debug log to help identify issues
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Zaraz consent status:', {
+            isZarazAvailable,
+            isAPIReady,
+            hasSentryConsent,
+            consentState,
+            allPurposes:
+              Object.keys(allPurposes).length > 0 ? allPurposes : 'empty',
+          });
+        }
+
+        setConsentStatus({
+          isZarazAvailable,
+          isAPIReady,
+          hasSentryConsent,
+          consentState,
+          allPurposes,
+        });
+      } catch (error) {
+        console.error('Error checking consent status:', error);
+        // Set safe defaults on error
+        setConsentStatus((prev) => ({
+          ...prev,
+          isZarazAvailable: false,
+          isAPIReady: false,
+          allPurposes: {},
+        }));
+      }
     };
 
     // Initial check
@@ -335,57 +358,92 @@ const ConsentManager: React.FC = () => {
             Available Consent Purposes
           </h3>
           {Object.entries(consentStatus.allPurposes).map(
-            ([id, purpose]: [string, any]) => (
-              <div
-                key={id}
-                style={{
-                  marginBottom: '0.5rem',
-                  padding: '0.5rem',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '4px',
-                  border:
-                    id === ZARAZ_FUNCTIONAL_PURPOSE_ID
-                      ? '2px solid #007bff'
-                      : '1px solid #dee2e6',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <strong>{purpose.name || id}</strong>
-                    {id === ZARAZ_FUNCTIONAL_PURPOSE_ID && (
-                      <span
-                        style={{
-                          marginLeft: '0.5rem',
-                          fontSize: '0.8rem',
-                          color: '#007bff',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        (Sentry)
-                      </span>
-                    )}
-                    <br />
-                    <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                      ID: {id}
-                    </span>
-                    {purpose.description && (
-                      <>
+            ([id, purpose]: [string, any]) => {
+              try {
+                // Safely extract purpose information
+                const purposeName =
+                  typeof purpose === 'object' && purpose?.name
+                    ? String(purpose.name)
+                    : String(purpose || id);
+
+                const purposeDescription =
+                  typeof purpose === 'object' && purpose?.description
+                    ? String(purpose.description)
+                    : null;
+
+                return (
+                  <div
+                    key={id}
+                    style={{
+                      marginBottom: '0.5rem',
+                      padding: '0.5rem',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '4px',
+                      border:
+                        id === ZARAZ_FUNCTIONAL_PURPOSE_ID
+                          ? '2px solid #007bff'
+                          : '1px solid #dee2e6',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div>
+                        <strong>{purposeName}</strong>
+                        {id === ZARAZ_FUNCTIONAL_PURPOSE_ID && (
+                          <span
+                            style={{
+                              marginLeft: '0.5rem',
+                              fontSize: '0.8rem',
+                              color: '#007bff',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            (Sentry)
+                          </span>
+                        )}
                         <br />
-                        <span style={{ fontSize: '0.9rem', color: '#666' }}>
-                          {purpose.description}
+                        <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                          ID: {id}
                         </span>
-                      </>
-                    )}
+                        {purposeDescription && (
+                          <>
+                            <br />
+                            <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                              {purposeDescription}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )
+                );
+              } catch (error) {
+                console.error(`Error rendering purpose ${id}:`, error, purpose);
+                return (
+                  <div
+                    key={id}
+                    style={{
+                      marginBottom: '0.5rem',
+                      padding: '0.5rem',
+                      backgroundColor: '#f8d7da',
+                      borderRadius: '4px',
+                      border: '1px solid #f5c6cb',
+                    }}
+                  >
+                    <strong>Error rendering purpose: {String(id)}</strong>
+                    <br />
+                    <span style={{ fontSize: '0.8rem', color: '#721c24' }}>
+                      Check console for details
+                    </span>
+                  </div>
+                );
+              }
+            }
           )}
         </div>
       )}
