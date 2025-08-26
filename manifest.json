@@ -1,0 +1,319 @@
+{
+  "name": "Sentry Managed Component",
+  "description": "Sentry CM manages Sentry instance: adjusts to the accepted purposes in Zaraz consent.",
+  "namespace": "sentry-cm",
+  "icon": "assets/sentry-cm.svg",
+  "categories": ["Advertising"],
+  "provides": ["events"],
+  "allowCustomFields": true,
+  "permissions": {
+    "client_network_requests": {
+      "description": "Sentry CM uses cookies to attribute sessions more accurately",
+      "required": false
+    },
+    "execute_unsafe_scripts": {
+      "description": "Simple logs for debugging purposes",
+      "required": false
+    },
+    "access_client_kv": {
+      "description": "Sentry CM uses cookies to attribute sessions more accurately",
+      "required": true
+    }
+  },
+  "settings": {
+    "core_integration.auto_session_tracking": {
+      "type": "boolean",
+      "label": "Auto Session Tracking",
+      "description": "Automatically track user sessions",
+      "default": true
+    },
+    "core_integration.send_default_pii": {
+      "type": "boolean",
+      "label": "Send Default PII",
+      "description": "Include personally identifiable information in events",
+      "default": true
+    },
+    "core_integration.capture_unhandled_rejections": {
+      "type": "boolean",
+      "label": "Capture Unhandled Rejections",
+      "description": "Capture unhandled promise rejections",
+      "default": true
+    },
+    "performance_integration.enable_performance": {
+      "type": "boolean",
+      "label": "Enable Performance",
+      "description": "Enable performance monitoring",
+      "default": true
+    },
+    "performance_integration.enable_profiling": {
+      "type": "boolean",
+      "label": "Enable Profiling",
+      "description": "Enable JavaScript profiling for performance insights",
+      "default": true
+    },
+    "performance_integration.enable_tracing": {
+      "type": "boolean",
+      "label": "Enable Tracing",
+      "description": "Enable distributed tracing",
+      "default": true
+    },
+    "replay_integration.enable_replay": {
+      "type": "boolean",
+      "label": "Enable Replay",
+      "description": "Record user sessions for debugging",
+      "default": true
+    },
+    "replay_integration.mask_all_text": {
+      "type": "boolean",
+      "label": "Mask All Text",
+      "description": "Mask all text content in session replays for privacy",
+      "default": true
+    },
+    "replay_integration.mask_all_inputs": {
+      "type": "boolean",
+      "label": "Mask All Inputs",
+      "description": "Mask all input values in session replays",
+      "default": true
+    },
+    "replay_integration.block_all_media": {
+      "type": "boolean",
+      "label": "Block All Media",
+      "description": "Block all media elements in session replays",
+      "default": true
+    },
+    "replay_integration.block_class": {
+      "type": "string",
+      "label": "Block Class",
+      "description": "CSS class to block elements from replay",
+      "default": "sentry-block"
+    },
+    "replay_integration.mask_class": {
+      "type": "string",
+      "label": "Mask Class",
+      "description": "CSS class to mask elements in replay",
+      "default": "sentry-mask"
+    },
+    "replay_integration.ignore_class": {
+      "type": "string",
+      "label": "Ignore Class",
+      "description": "CSS class to ignore elements in replay",
+      "default": "sentry-ignore"
+    },
+    "replay_integration.network_detail_allowed_urls": {
+      "type": "text",
+      "label": "Network Detail Allowed URLs",
+      "description": "Comma-separated URLs to include network details for"
+    },
+    "replay_integration.network_detail_denied_urls": {
+      "type": "text",
+      "label": "Network Detail Denied URLs",
+      "description": "Comma-separated URLs to exclude network details for"
+    },
+    "replay_integration.network_capture_body": {
+      "type": "boolean",
+      "label": "Network Capture Body",
+      "description": "Capture request/response bodies in replay",
+      "default": true
+    },
+    "replay_integration.network_request_headers": {
+      "type": "text",
+      "label": "Network Request Headers",
+      "description": "Comma-separated request headers to capture"
+    },
+    "replay_integration.network_response_headers": {
+      "type": "text",
+      "label": "Network Response Headers",
+      "description": "Comma-separated response headers to capture"
+    },
+    "error_filtering.before_breadcrumb": {
+      "type": "string",
+      "label": "Before Breadcrumb",
+      "description": "JavaScript function name to filter breadcrumbs"
+    },
+    "browser_integration.breadcrumbs_console": {
+      "type": "boolean",
+      "label": "Breadcrumbs Console",
+      "description": "Capture console logs as breadcrumbs",
+      "default": true
+    },
+    "browser_integration.breadcrumbs_dom": {
+      "type": "boolean",
+      "label": "Breadcrumbs DOM",
+      "description": "Capture DOM interactions as breadcrumbs",
+      "default": true
+    },
+    "browser_integration.breadcrumbs_fetch": {
+      "type": "boolean",
+      "label": "Breadcrumbs Fetch",
+      "description": "Capture fetch requests as breadcrumbs",
+      "default": true
+    },
+    "browser_integration.breadcrumbs_history": {
+      "type": "boolean",
+      "label": "Breadcrumbs History",
+      "description": "Capture navigation changes as breadcrumbs",
+      "default": true
+    },
+    "browser_integration.breadcrumbs_xhr": {
+      "type": "boolean",
+      "label": "Breadcrumbs XHR",
+      "description": "Capture XHR requests as breadcrumbs",
+      "default": true
+    },
+    "browser_integration.capture_console": {
+      "type": "boolean",
+      "label": "Capture Console",
+      "description": "Capture console errors/warnings as events",
+      "default": true
+    },
+    "browser_integration.capture_xhr": {
+      "type": "boolean",
+      "label": "Capture XHR",
+      "description": "Capture failed HTTP requests as events",
+      "default": true
+    },
+    "browser_integration.capture_fetch": {
+      "type": "boolean",
+      "label": "Capture Fetch",
+      "description": "Capture failed fetch requests as events",
+      "default": true
+    },
+    "browser_integration.capture_click_events": {
+      "type": "boolean",
+      "label": "Capture Click Events",
+      "description": "Capture click events for error context",
+      "default": true
+    },
+    "browser_integration.capture_key_events": {
+      "type": "boolean",
+      "label": "Capture Key Events",
+      "description": "Capture key events for error context",
+      "default": true
+    },
+    "context_integration.initial_scope_user": {
+      "type": "text",
+      "label": "Initial Scope User",
+      "description": "JSON string for initial user context"
+    },
+    "advanced_integration.auto_instrument": {
+      "type": "boolean",
+      "label": "Auto Instrument",
+      "description": "Automatically instrument supported libraries",
+      "default": true
+    },
+    "advanced_integration.instrument_navigation": {
+      "type": "boolean",
+      "label": "Instrument Navigation",
+      "description": "Instrument navigation timing",
+      "default": true
+    },
+    "advanced_integration.instrument_page_load": {
+      "type": "boolean",
+      "label": "Instrument Page Load",
+      "description": "Instrument page load timing",
+      "default": true
+    },
+    "advanced_integration.instrument_xhr": {
+      "type": "boolean",
+      "label": "Instrument XHR",
+      "description": "Instrument XHR requests",
+      "default": true
+    },
+    "advanced_integration.instrument_fetch": {
+      "type": "boolean",
+      "label": "Instrument Fetch",
+      "description": "Instrument fetch requests",
+      "default": true
+    },
+    "advanced_integration.enable_long_task": {
+      "type": "boolean",
+      "label": "Enable Long Task",
+      "description": "Capture long task performance entries",
+      "default": true
+    },
+    "advanced_integration.enable_INP": {
+      "type": "boolean",
+      "label": "Enable INP",
+      "description": "Capture Interaction to Next Paint metrics",
+      "default": true
+    },
+    "advanced_integration.enable_CLS": {
+      "type": "boolean",
+      "label": "Enable CLS",
+      "description": "Capture Cumulative Layout Shift metrics",
+      "default": true
+    },
+    "advanced_integration.enable_LCP": {
+      "type": "boolean",
+      "label": "Enable LCP",
+      "description": "Capture Largest Contentful Paint metrics",
+      "default": true
+    },
+    "advanced_integration.enable_FID": {
+      "type": "boolean",
+      "label": "Enable FID",
+      "description": "Capture First Input Delay metrics",
+      "default": true
+    },
+    "advanced_integration.enable_TTFB": {
+      "type": "boolean",
+      "label": "Enable TTFB",
+      "description": "Capture Time to First Byte metrics",
+      "default": true
+    },
+    "advanced_integration.enable_FCP": {
+      "type": "boolean",
+      "label": "Enable FCP",
+      "description": "Capture First Contentful Paint metrics",
+      "default": true
+    },
+    "react_integration.react_error_boundary": {
+      "type": "boolean",
+      "label": "React Error Boundary",
+      "description": "Capture React error boundary errors",
+      "default": true
+    },
+    "react_integration.react_profiler": {
+      "type": "boolean",
+      "label": "React Profiler",
+      "description": "Enable React profiler integration",
+      "default": true
+    },
+    "react_integration.react_router_instrumentation": {
+      "type": "boolean",
+      "label": "React Router Instrumentation",
+      "description": "Instrument React Router navigation",
+      "default": true
+    },
+    "vue_integration.vue_error_handler": {
+      "type": "boolean",
+      "label": "Vue Error Handler",
+      "description": "Capture Vue error handler errors",
+      "default": true
+    },
+    "vue_integration.vue_warn_handler": {
+      "type": "boolean",
+      "label": "Vue Warn Handler",
+      "description": "Capture Vue warning handler warnings",
+      "default": true
+    },
+    "vue_integration.vue_router_instrumentation": {
+      "type": "boolean",
+      "label": "Vue Router Instrumentation",
+      "description": "Instrument Vue Router navigation",
+      "default": true
+    },
+    "angular_integration.angular_error_handler": {
+      "type": "boolean",
+      "label": "Angular Error Handler",
+      "description": "Capture Angular error handler errors",
+      "default": true
+    },
+    "angular_integration.angular_router_instrumentation": {
+      "type": "boolean",
+      "label": "Angular Router Instrumentation",
+      "description": "Instrument Angular Router navigation",
+      "default": true
+    }
+  }
+}
