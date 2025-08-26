@@ -1,6 +1,6 @@
 {
   "name": "@managed-components/sentry",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Draft version of Sentry Managed Component",
   "main": "components/sentry-managed-component/index.js",
   "scripts": {
