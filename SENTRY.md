@@ -2,6 +2,39 @@
 
 This document provides a comprehensive overview of all Sentry SDK configuration parameters that can be used in the managed component.
 
+## Consent Management & Purpose Mapping
+
+The Sentry Managed Component integrates with Zaraz consent management to ensure GDPR compliance. By default, it uses standard Zaraz purpose IDs, but these can be customized to match your specific consent management setup.
+
+### Default Purpose Mapping
+
+| Consent Type  | Default Purpose ID | Description                                                                           |
+| ------------- | ------------------ | ------------------------------------------------------------------------------------- |
+| `functional`  | `lFDj`             | Required for Sentry error tracking and debugging features (Essential/Necessary)       |
+| `analytics`   | `yybb`             | Controls performance monitoring and analytics (Performance & Statistics)              |
+| `marketing`   | `rlae`             | Controls user tracking and marketing-related features (Advertising & Personalization) |
+| `preferences` | `hfWn`             | Controls user preference tracking (Personalization & Settings)                        |
+
+### Custom Purpose Mapping
+
+You can configure custom purpose IDs when initializing the Sentry integration:
+
+```javascript
+// Example with custom purpose mapping
+sentryZarazIntegration({
+  timeout: 10000,
+  debug: false,
+  purposeMapping: {
+    functional: 'custom-functional-id',
+    analytics: 'custom-analytics-id',
+    marketing: 'custom-marketing-id',
+    preferences: 'custom-preferences-id',
+  },
+});
+```
+
+For detailed examples and usage instructions, see [CUSTOM_PURPOSE_MAPPING.md](./CUSTOM_PURPOSE_MAPPING.md).
+
 ## Core Configuration Parameters
 
 | Parameter                      | Type    | Default      | Description                                               | Is Managed | Namespace                                |

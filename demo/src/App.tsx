@@ -1,65 +1,48 @@
 import React, { useState } from 'react';
-import * as Sentry from '@sentry/react';
 import ConsentManager from './components/ConsentManager';
+import SentryStatus from './components/SentryStatus';
+import SentryRecordingState from './components/SentryRecordingState';
+import EventLogViewer from './components/EventLogViewer';
 import ErrorBoundary from './components/ErrorBoundary';
+import { getZaraz } from './lib/zaraz';
+import { logGeneralEvent } from './lib/eventLogger';
 
 const App: React.FC = () => {
-  const [count, setCount] = useState(0);
+  const [isZarazAvailable, setIsZarazAvailable] = useState(false);
 
-  const handleError = () => {
-    const error = new Error(`This is a test error #${Math.random()}`);
-    Sentry.captureException(error);
-    throw error;
-  };
+  // Check if Zaraz is available
+  React.useEffect(() => {
+    const checkZaraz = () => {
+      const zaraz = getZaraz();
+      const newIsZarazAvailable = !!zaraz;
 
-  const handlePerformance = () => {
-    return Sentry.startSpan({ name: 'performance-test' }, () => {
-      performance.mark('start');
-      // Simulate some work
-      for (let i = 0; i < 1000000; i++) {
-        Math.random();
+      if (newIsZarazAvailable !== isZarazAvailable) {
+        if (newIsZarazAvailable) {
+          logGeneralEvent('Demo app started', { zarazDetected: true });
+        }
+        setIsZarazAvailable(newIsZarazAvailable);
       }
-      performance.mark('end');
-      performance.measure('work', 'start', 'end');
-    });
-  };
+    };
+
+    checkZaraz();
+    const interval = setInterval(checkZaraz, 1000);
+    return () => clearInterval(interval);
+  }, [isZarazAvailable]);
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
       <h1>Sentry Managed Component Demo</h1>
 
       <ErrorBoundary>
+        <EventLogViewer />
+        <SentryStatus isZarazAvailable={isZarazAvailable} />
         <ConsentManager />
       </ErrorBoundary>
 
       <div style={{ marginBottom: '2rem' }}>
-        <h2>Error Tracking Demo</h2>
-        <button onClick={handleError} style={{ padding: '0.5rem 1rem' }}>
-          Trigger Error
-        </button>
-      </div>
-
-      <div style={{ marginBottom: '2rem' }}>
-        <h2>Performance Monitoring Demo</h2>
-        <button onClick={handlePerformance} style={{ padding: '0.5rem 1rem' }}>
-          Run Performance Test
-        </button>
-      </div>
-
-      <div style={{ marginBottom: '2rem' }}>
-        <h2>Session Replay Demo</h2>
-        <p>Try interacting with this counter:</p>
-        <button
-          onClick={() => setCount((c) => c + 1)}
-          style={{ padding: '0.5rem 1rem' }}
-        >
-          Count: {count}
-        </button>
-      </div>
-
-      <div>
-        <h2>Profiling Demo</h2>
-        <p>Check the browser console for performance marks</p>
+        <h2>Sentry Recording State</h2>
+        <p>Current Sentry recording capabilities based on consent status:</p>
+        <SentryRecordingState isZarazAvailable={isZarazAvailable} />
       </div>
     </div>
   );

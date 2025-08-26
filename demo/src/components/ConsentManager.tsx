@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   getZaraz,
-  isSentryManagedComponentEnabled,
   getConsentStatus,
   setConsent,
   ZARAZ_FUNCTIONAL_PURPOSE_ID,
 } from '../lib/zaraz';
+import { logZarazEvent, logConsentEvent } from '../lib/eventLogger';
 
 interface ConsentStatus {
   isZarazAvailable: boolean;
   isAPIReady: boolean;
-  hasSentryConsent: boolean;
   consentState: {
     functional: boolean;
     analytics: boolean;
@@ -24,7 +23,6 @@ const ConsentManager: React.FC = () => {
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>({
     isZarazAvailable: false,
     isAPIReady: false,
-    hasSentryConsent: false,
     consentState: {
       functional: false,
       analytics: false,
@@ -33,6 +31,7 @@ const ConsentManager: React.FC = () => {
     },
     allPurposes: {},
   });
+  const [isZarazInitialized, setIsZarazInitialized] = useState(false);
 
   useEffect(() => {
     // Check consent status periodically
@@ -41,14 +40,49 @@ const ConsentManager: React.FC = () => {
         const zaraz = getZaraz();
         const isZarazAvailable = !!zaraz;
         const isAPIReady = !!zaraz?.consent?.APIReady;
-        const hasSentryConsent = isSentryManagedComponentEnabled();
+
+        // Log Zaraz initialization
+        if (isZarazAvailable && !isZarazInitialized) {
+          logZarazEvent('Zaraz initialized', {
+            apiReady: isAPIReady,
+            hasConsentAPI: !!zaraz?.consent,
+          });
+          setIsZarazInitialized(true);
+        }
+
+        // Log API readiness change
+        if (
+          isAPIReady &&
+          consentStatus.isZarazAvailable &&
+          !consentStatus.isAPIReady
+        ) {
+          logZarazEvent('Zaraz consent API ready', {
+            purposesCount: Object.keys(zaraz?.consent?.purposes || {}).length,
+          });
+        }
+
         const consentStatusFromZaraz = getConsentStatus();
+        const prevConsentState = consentStatus.consentState;
         const consentState = {
           functional: consentStatusFromZaraz.functional ?? false,
           analytics: consentStatusFromZaraz.analytics ?? false,
           marketing: consentStatusFromZaraz.marketing ?? false,
           preferences: consentStatusFromZaraz.preferences ?? false,
         };
+
+        // Log consent changes
+        Object.entries(consentState).forEach(([type, granted]) => {
+          const prevGranted =
+            prevConsentState[type as keyof typeof prevConsentState];
+          if (prevGranted !== granted && consentStatus.isZarazAvailable) {
+            logConsentEvent(`Consent updated`, {
+              type,
+              granted,
+              changed: 'automatic',
+            });
+          }
+        });
+
         const allPurposes = zaraz?.consent?.purposes || {};
 
         // Debug log to help identify issues
@@ -56,7 +90,6 @@ const ConsentManager: React.FC = () => {
           console.debug('Zaraz consent status:', {
             isZarazAvailable,
             isAPIReady,
-            hasSentryConsent,
             consentState,
             allPurposes:
               Object.keys(allPurposes).length > 0 ? allPurposes : 'empty',
@@ -66,7 +99,6 @@ const ConsentManager: React.FC = () => {
         setConsentStatus({
           isZarazAvailable,
           isAPIReady,
-          hasSentryConsent,
           consentState,
           allPurposes,
         });
@@ -89,38 +121,33 @@ const ConsentManager: React.FC = () => {
     const interval = setInterval(checkConsentStatus, 1000);
 
     return () => clearInterval(interval);
-  }, []);
-
-  const handleGrantAllConsent = () => {
-    setConsent({
-      functional: true,
-      analytics: true,
-      marketing: true,
-      preferences: true,
-    });
-  };
-
-  const handleRevokeAllConsent = () => {
-    setConsent({
-      functional: false,
-      analytics: false,
-      marketing: false,
-      preferences: false,
-    });
-  };
+  }, [
+    consentStatus.isZarazAvailable,
+    consentStatus.isAPIReady,
+    consentStatus.consentState,
+    isZarazInitialized,
+  ]);
 
   const handleToggleConsent = (
     type: keyof typeof consentStatus.consentState
   ) => {
+    const newValue = !consentStatus.consentState[type];
+    logConsentEvent('Consent updated', {
+      type,
+      granted: newValue,
+      changed: 'manual',
+    });
+
     setConsent({
       ...consentStatus.consentState,
-      [type]: !consentStatus.consentState[type],
+      [type]: newValue,
     });
   };
 
   const handleShowConsentModal = () => {
     const zaraz = getZaraz();
     if (zaraz?.showConsentModal) {
+      logConsentEvent('Consent modal shown', { trigger: 'manual' });
       zaraz.showConsentModal();
     }
   };
@@ -186,7 +213,7 @@ const ConsentManager: React.FC = () => {
           </span>
         </div>
         <div style={{ marginBottom: '0.25rem' }}>
-          <strong>Sentry Consent (Functional):</strong>{' '}
+          <strong>Functional Consent:</strong>{' '}
           <span
             style={{
               color: consentStatus.consentState.functional
@@ -244,32 +271,6 @@ const ConsentManager: React.FC = () => {
             Consent Controls
           </h3>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <button
-              onClick={handleGrantAllConsent}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              Grant All Consent
-            </button>
-            <button
-              onClick={handleRevokeAllConsent}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              Revoke All Consent
-            </button>
             <button
               onClick={handleShowConsentModal}
               style={{
@@ -329,19 +330,6 @@ const ConsentManager: React.FC = () => {
               )
             )}
           </div>
-
-          <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
-            Overall status:{' '}
-            <strong
-              style={{
-                color: consentStatus.hasSentryConsent ? '#28a745' : '#dc3545',
-              }}
-            >
-              {consentStatus.hasSentryConsent
-                ? 'FUNCTIONAL ENABLED'
-                : 'FUNCTIONAL DISABLED'}
-            </strong>
-          </p>
         </div>
       ) : (
         <div style={{ marginBottom: '1rem' }}>
@@ -362,63 +350,120 @@ const ConsentManager: React.FC = () => {
               try {
                 // Safely extract purpose information
                 const purposeName =
-                  typeof purpose === 'object' && purpose?.name
+                  typeof purpose === 'object' &&
+                  purpose !== null &&
+                  purpose.name
                     ? String(purpose.name)
-                    : String(purpose || id);
+                    : typeof purpose === 'string'
+                      ? purpose
+                      : id;
 
                 const purposeDescription =
-                  typeof purpose === 'object' && purpose?.description
+                  typeof purpose === 'object' &&
+                  purpose !== null &&
+                  purpose.description
                     ? String(purpose.description)
                     : null;
+
+                // Get current consent status for this purpose
+                const purposeConsent =
+                  id === ZARAZ_FUNCTIONAL_PURPOSE_ID
+                    ? consentStatus.consentState.functional
+                    : purpose?.category === 'analytics'
+                      ? consentStatus.consentState.analytics
+                      : purpose?.category === 'marketing'
+                        ? consentStatus.consentState.marketing
+                        : purpose?.category === 'preferences'
+                          ? consentStatus.consentState.preferences
+                          : false;
 
                 return (
                   <div
                     key={id}
                     style={{
-                      marginBottom: '0.5rem',
-                      padding: '0.5rem',
+                      marginBottom: '0.75rem',
+                      padding: '1rem',
                       backgroundColor: '#f8f9fa',
-                      borderRadius: '4px',
+                      borderRadius: '6px',
                       border:
                         id === ZARAZ_FUNCTIONAL_PURPOSE_ID
                           ? '2px solid #007bff'
                           : '1px solid #dee2e6',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                     }}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div>
-                        <strong>{purposeName}</strong>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          marginBottom: '0.25rem',
+                        }}
+                      >
+                        <strong style={{ fontSize: '1rem', color: '#333' }}>
+                          {purposeName}
+                        </strong>
+                        <span
+                          style={{
+                            padding: '0.15rem 0.4rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 'bold',
+                            borderRadius: '12px',
+                            backgroundColor: purposeConsent
+                              ? '#28a745'
+                              : '#dc3545',
+                            color: 'white',
+                          }}
+                        >
+                          {purposeConsent ? 'GRANTED' : 'DENIED'}
+                        </span>
                         {id === ZARAZ_FUNCTIONAL_PURPOSE_ID && (
                           <span
                             style={{
-                              marginLeft: '0.5rem',
-                              fontSize: '0.8rem',
+                              padding: '0.15rem 0.4rem',
+                              fontSize: '0.7rem',
                               color: '#007bff',
+                              backgroundColor: '#e3f2fd',
+                              borderRadius: '12px',
                               fontWeight: 'bold',
                             }}
                           >
-                            (Sentry)
+                            SENTRY
                           </span>
                         )}
-                        <br />
-                        <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                          ID: {id}
-                        </span>
-                        {purposeDescription && (
-                          <>
-                            <br />
-                            <span style={{ fontSize: '0.9rem', color: '#666' }}>
-                              {purposeDescription}
-                            </span>
-                          </>
-                        )}
                       </div>
+                      <div
+                        style={{
+                          fontSize: '0.8rem',
+                          color: '#666',
+                          marginBottom: '0.25rem',
+                        }}
+                      >
+                        <strong>Purpose ID:</strong>{' '}
+                        <code
+                          style={{
+                            backgroundColor: '#e9ecef',
+                            padding: '0.15rem 0.3rem',
+                            borderRadius: '3px',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          {id}
+                        </code>
+                      </div>
+                      {purposeDescription && (
+                        <div
+                          style={{
+                            fontSize: '0.9rem',
+                            color: '#555',
+                            lineHeight: '1.4',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          {purposeDescription}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -429,13 +474,15 @@ const ConsentManager: React.FC = () => {
                     key={id}
                     style={{
                       marginBottom: '0.5rem',
-                      padding: '0.5rem',
+                      padding: '0.75rem',
                       backgroundColor: '#f8d7da',
                       borderRadius: '4px',
                       border: '1px solid #f5c6cb',
                     }}
                   >
-                    <strong>Error rendering purpose: {String(id)}</strong>
+                    <strong style={{ color: '#721c24' }}>
+                      Error rendering purpose: {String(id)}
+                    </strong>
                     <br />
                     <span style={{ fontSize: '0.8rem', color: '#721c24' }}>
                       Check console for details

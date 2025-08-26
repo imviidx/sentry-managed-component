@@ -1,5 +1,17 @@
 import type { Event, EventHint } from '@sentry/react';
-import { getZaraz, isSentryManagedComponentEnabled } from './lib/zaraz';
+import {
+  getZaraz,
+  isSentryManagedComponentEnabled,
+  ZARAZ_FUNCTIONAL_PURPOSE_ID,
+  ZARAZ_ANALYTICS_PURPOSE_ID,
+  ZARAZ_MARKETING_PURPOSE_ID,
+  ZARAZ_PREFERENCES_PURPOSE_ID,
+  type PurposeMapping,
+} from './lib/zaraz';
+import { logSentryEvent } from './lib/eventLogger';
+
+// Re-export the PurposeMapping type for convenience
+export type { PurposeMapping };
 
 export interface SentryZarazIntegrationOptions {
   /**
@@ -13,6 +25,12 @@ export interface SentryZarazIntegrationOptions {
    * @default false
    */
   debug?: boolean;
+
+  /**
+   * Custom purpose mapping for Zaraz consent purposes
+   * @default Uses default Zaraz purpose IDs
+   */
+  purposeMapping?: PurposeMapping;
 }
 
 class SentryZarazIntegrationClass {
@@ -30,6 +48,12 @@ class SentryZarazIntegrationClass {
     this.options = {
       timeout: 10000,
       debug: false,
+      purposeMapping: {
+        functional: ZARAZ_FUNCTIONAL_PURPOSE_ID,
+        analytics: ZARAZ_ANALYTICS_PURPOSE_ID,
+        marketing: ZARAZ_MARKETING_PURPOSE_ID,
+        preferences: ZARAZ_PREFERENCES_PURPOSE_ID,
+      },
       ...options,
     };
   }
@@ -52,6 +76,11 @@ class SentryZarazIntegrationClass {
     // If consent is ready and we have consent, allow the event
     if (this.isConsentReady && this.hasConsent) {
       this.log('Event allowed - consent granted');
+      logSentryEvent('Sentry event allowed', {
+        eventType: event.type,
+        eventId: event.event_id,
+        level: event.level,
+      });
       // Ensure logentry.params is string[] if present
       if (event.logentry && event.logentry.params) {
         event.logentry.params = Array.isArray(event.logentry.params)
@@ -64,11 +93,23 @@ class SentryZarazIntegrationClass {
     // If consent is ready but we don't have consent, block the event
     if (this.isConsentReady && !this.hasConsent) {
       this.log('Event blocked - consent not granted');
+      logSentryEvent('Zaraz Sentry Integration blocks event', {
+        reason: 'No functional consent',
+        eventType: event.type,
+        eventId: event.event_id,
+        level: event.level,
+      });
       return null;
     }
 
     // If consent is not ready yet, queue the event and block it for now
     this.log('Event queued - waiting for consent');
+    logSentryEvent('Sentry event queued', {
+      reason: 'Waiting for consent decision',
+      eventType: event.type,
+      eventId: event.event_id,
+      queueSize: this.eventQueue.length + 1,
+    });
     this.eventQueue.push({ event, hint });
     return null; // Block the event for now, we'll resend it later if consent is granted
   }
@@ -105,7 +146,9 @@ class SentryZarazIntegrationClass {
   }
 
   private checkConsent(): void {
-    const hasConsent = isSentryManagedComponentEnabled();
+    const hasConsent = isSentryManagedComponentEnabled(
+      this.options.purposeMapping
+    );
     this.log(`Consent check result: ${hasConsent}`);
 
     this.isConsentReady = true;
@@ -113,9 +156,15 @@ class SentryZarazIntegrationClass {
 
     if (hasConsent) {
       this.log('Consent granted, processing queued events');
+      logSentryEvent('Consent granted', {
+        queuedEvents: this.eventQueue.length,
+      });
       this.processQueuedEvents();
     } else {
       this.log('Consent not granted, clearing event queue');
+      logSentryEvent('Consent denied', {
+        discardedEvents: this.eventQueue.length,
+      });
       this.clearEventQueue();
     }
 
@@ -135,11 +184,17 @@ class SentryZarazIntegrationClass {
 
     // Poll for consent changes (Zaraz doesn't provide event listeners)
     const checkConsentChanges = () => {
-      const currentConsent = isSentryManagedComponentEnabled();
+      const currentConsent = isSentryManagedComponentEnabled(
+        this.options.purposeMapping
+      );
       if (currentConsent !== this.hasConsent) {
         this.log(
           `Consent changed from ${this.hasConsent} to ${currentConsent}`
         );
+        logSentryEvent('Consent status changed', {
+          from: this.hasConsent,
+          to: currentConsent,
+        });
         this.hasConsent = currentConsent;
 
         if (currentConsent) {

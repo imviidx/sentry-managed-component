@@ -10,6 +10,13 @@ Sentry.init({
     sentryZarazIntegration({
       timeout: 10000, // Wait up to 10 seconds for consent
       debug: false, // Disable debug logging for production
+      // Purpose mapping using your Zaraz configuration:
+      purposeMapping: {
+        functional: 'lFDj', // Essential/Necessary
+        analytics: 'yybb', // Performance & Statistics
+        marketing: 'rlae', // Advertising & Personalization
+        preferences: 'hfWn', // Personalization & Settings
+      },
     }),
     Sentry.browserTracingIntegration(),
   ],
