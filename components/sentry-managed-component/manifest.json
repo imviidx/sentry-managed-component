@@ -21,6 +21,12 @@
     }
   },
   "settings": {
+    "sentry-dsn": {
+      "type": "string",
+      "label": "Sentry DSN",
+      "description": "Your Sentry DSN",
+      "default": ""
+    },
     "consent.functional": {
       "type": "boolean",
       "label": "Functional Consent",

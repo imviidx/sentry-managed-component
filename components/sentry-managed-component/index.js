@@ -1,4 +1,4 @@
-var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Component loading with settings:",Object.keys(i)),o.addEventListener("clientcreated",({client:n})=>{console.log("[Sentry CM] Client created, settings:",i),n.execute('console.log("\u{1F680} Hello from Sentry Managed Component!")'),n.execute(`console.log("\u2699\uFE0F MC Settings:", JSON.stringify(${JSON.stringify(i)}, null, 2))`),n.execute(`
+var a={};async function s(i,n){console.log("\u{1F3AF} [SERVER] Sentry Managed Component loading with settings:",Object.keys(n)),i.addEventListener("clientcreated",({client:e})=>{console.log("[Sentry CM] Client created, settings:",n),e.execute('console.log("\u{1F680} Hello from Sentry Managed Component!")'),e.execute(`console.log("\u2699\uFE0F MC Settings:", JSON.stringify(${JSON.stringify(n)}, null, 2))`),e.execute(`
       (function() {
         // Listen for DOM consent events and forward to WebCM
         window.addEventListener('consent', function(event) {
@@ -21,8 +21,10 @@ var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Co
 
         console.log('[Sentry CM] DOM consent event listener installed');
       })();
-    `),n.execute(`
+    `),e.execute(`
       (function() {
+        const sentryDsn = '${n["sentry-dsn"]||""}';
+
         // Check if Sentry is already initialized
         if (typeof window.Sentry !== 'undefined' && window.Sentry.getCurrentHub) {
           const hub = window.Sentry.getCurrentHub();
@@ -60,12 +62,72 @@ var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Co
           } else {
             console.warn('[Sentry CM] Sentry is available but no client found - unable to manage settings');
           }
+        } else if (sentryDsn) {
+          console.log('[Sentry CM] No existing Sentry instance found, initializing with DSN:', sentryDsn);
+
+          // Load Sentry SDK dynamically
+          const script = document.createElement('script');
+          script.src = 'https://browser.sentry-cdn.com/8.33.1/bundle.tracing.replay.min.js';
+          script.crossOrigin = 'anonymous';
+          script.onload = function() {
+            console.log('[Sentry CM] Sentry SDK loaded, initializing...');
+
+            // Default configuration based on consent settings
+            const defaultConfig = {
+              dsn: sentryDsn,
+              autoSessionTracking: ${n["consent-functional"]||n["consent.functional"]||!0},
+              sendDefaultPii: ${n["consent-preferences"]||n["consent.preferences"]||!1},
+              captureUnhandledRejections: ${n["consent-functional"]||n["consent.functional"]||!0},
+              tracesSampleRate: ${n["consent-analytics"]||n["consent.analytics"]||!0} ? 1.0 : 0,
+              profilesSampleRate: ${n["consent-analytics"]||n["consent.analytics"]||!0} ? 1.0 : 0,
+              replaysSessionSampleRate: ${n["consent-marketing"]||n["consent.marketing"]||!1} ? 0.1 : 0,
+              replaysOnErrorSampleRate: ${n["consent-marketing"]||n["consent.marketing"]||!1} ? 1.0 : 0,
+              integrations: [
+                window.Sentry.browserTracingIntegration(),
+                window.Sentry.replayIntegration()
+              ]
+            };
+
+            // Initialize Sentry
+            window.Sentry.init(defaultConfig);
+
+            // Store original configuration for consent management
+            window.__sentryOriginalConfig = {
+              autoSessionTracking: defaultConfig.autoSessionTracking,
+              sendDefaultPii: defaultConfig.sendDefaultPii,
+              captureUnhandledRejections: defaultConfig.captureUnhandledRejections,
+              tracesSampleRate: defaultConfig.tracesSampleRate,
+              profilesSampleRate: defaultConfig.profilesSampleRate,
+              replaysSessionSampleRate: defaultConfig.replaysSessionSampleRate,
+              replaysOnErrorSampleRate: defaultConfig.replaysOnErrorSampleRate,
+              integrations: defaultConfig.integrations.map(i => i.name || i.constructor.name),
+              beforeBreadcrumb: defaultConfig.beforeBreadcrumb,
+              initialScope: defaultConfig.initialScope
+            };
+
+            window.__sentryManagedComponent = {
+              initialized: true,
+              originalConfig: window.__sentryOriginalConfig,
+              updateConsent: function(newConsentState) {
+                console.log('[Sentry CM] Manual consent update triggered:', newConsentState);
+                if (window.__updateSentryConsent) {
+                  window.__updateSentryConsent(newConsentState);
+                }
+              }
+            };
+
+            console.log('[Sentry CM] Sentry initialized successfully with managed component');
+          };
+          script.onerror = function() {
+            console.error('[Sentry CM] Failed to load Sentry SDK');
+          };
+          document.head.appendChild(script);
         } else {
-          console.warn('[Sentry CM] No existing Sentry instance found. Please initialize Sentry before loading this Managed Component.');
-          console.info('[Sentry CM] Expected: window.Sentry to be available with getCurrentHub() method');
+          console.warn('[Sentry CM] No existing Sentry instance found and no DSN provided.');
+          console.info('[Sentry CM] Expected: window.Sentry to be available with getCurrentHub() method, or sentry-dsn setting to be configured');
         }
       })();
-    `)}),o.addEventListener("consent",async n=>{let{client:e,payload:t}=n;a=t,r(e,a)}),o.addEventListener("clientcreated",({client:n})=>{n.execute(`console.log("CM Settings:", ${JSON.stringify(i)})`),n.execute(`
+    `)}),i.addEventListener("consent",async e=>{let{client:t,payload:o}=e;a=o,r(t,a)}),i.addEventListener("clientcreated",({client:e})=>{e.execute(`console.log("CM Settings:", ${JSON.stringify(n)})`),e.execute(`
       (function() {
         // Check for stored consent state from DOM events
         if (window.__consentState) {
@@ -83,11 +145,11 @@ var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Co
           // This will be defined in the consent handler scope
         };
       })();
-    `)});function r(n,e){n.execute(`console.log("consentState",${JSON.stringify(e)})`),n.execute(`
+    `)});function r(e,t){e.execute(`console.log("consentState",${JSON.stringify(t)})`),e.execute(`
       (function() {
         // Store the update function globally so DOM events can call it
         window.__updateSentryConsent = function(newConsentState) {
-          const consent = newConsentState || ${JSON.stringify(e)};
+          const consent = newConsentState || ${JSON.stringify(t)};
 
           if (!window.Sentry || !window.__sentryManagedComponent || !window.__sentryManagedComponent.initialized) {
             console.warn('[Sentry CM] Sentry not properly initialized for consent management');
@@ -205,24 +267,24 @@ var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Co
         };
 
         // Call the update function with current consent state
-        window.__updateSentryConsent(${JSON.stringify(e)});
+        window.__updateSentryConsent(${JSON.stringify(t)});
       })();
-    `)}o.addEventListener("pageview",async n=>{let{client:e}=n,t=e.get("user_id");t&&e.execute(`
+    `)}i.addEventListener("pageview",async e=>{let{client:t}=e,o=t.get("user_id");o&&t.execute(`
         if (window.Sentry && window.Sentry.setUser) {
-          window.Sentry.setUser({ id: '${t}' });
+          window.Sentry.setUser({ id: '${o}' });
         }
-      `),e.execute(`
+      `),t.execute(`
       if (window.Sentry && window.Sentry.setTag) {
         window.Sentry.setTag('page.url', window.location.href);
         window.Sentry.setTag('page.title', document.title);
       }
-    `)}),o.addEventListener("event",async n=>{let{client:e,payload:t}=n;t.name&&a.functional&&e.execute(`
+    `)}),i.addEventListener("event",async e=>{let{client:t,payload:o}=e;o.name&&a.functional&&t.execute(`
         if (window.Sentry && window.Sentry.addBreadcrumb) {
           window.Sentry.addBreadcrumb({
-            message: 'Custom event: ${t.name}',
+            message: 'Custom event: ${o.name}',
             category: 'custom',
             level: 'info',
-            data: ${JSON.stringify(t)}
+            data: ${JSON.stringify(o)}
           });
         }
       `)})}export{s as default};

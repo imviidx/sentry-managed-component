@@ -55,6 +55,8 @@ export default async function (manager: Manager, settings: ComponentSettings) {
 
     client.execute(`
       (function() {
+        const sentryDsn = '${settings['sentry-dsn'] || ''}';
+
         // Check if Sentry is already initialized
         if (typeof window.Sentry !== 'undefined' && window.Sentry.getCurrentHub) {
           const hub = window.Sentry.getCurrentHub();
@@ -92,9 +94,97 @@ export default async function (manager: Manager, settings: ComponentSettings) {
           } else {
             console.warn('[Sentry CM] Sentry is available but no client found - unable to manage settings');
           }
+        } else if (sentryDsn) {
+          console.log('[Sentry CM] No existing Sentry instance found, initializing with DSN:', sentryDsn);
+
+          // Load Sentry SDK dynamically
+          const script = document.createElement('script');
+          script.src = 'https://browser.sentry-cdn.com/8.33.1/bundle.tracing.replay.min.js';
+          script.crossOrigin = 'anonymous';
+          script.onload = function() {
+            console.log('[Sentry CM] Sentry SDK loaded, initializing...');
+
+            // Default configuration based on consent settings
+            const defaultConfig = {
+              dsn: sentryDsn,
+              autoSessionTracking: ${
+                settings['consent-functional'] ||
+                settings['consent.functional'] ||
+                true
+              },
+              sendDefaultPii: ${
+                settings['consent-preferences'] ||
+                settings['consent.preferences'] ||
+                false
+              },
+              captureUnhandledRejections: ${
+                settings['consent-functional'] ||
+                settings['consent.functional'] ||
+                true
+              },
+              tracesSampleRate: ${
+                settings['consent-analytics'] ||
+                settings['consent.analytics'] ||
+                true
+              } ? 1.0 : 0,
+              profilesSampleRate: ${
+                settings['consent-analytics'] ||
+                settings['consent.analytics'] ||
+                true
+              } ? 1.0 : 0,
+              replaysSessionSampleRate: ${
+                settings['consent-marketing'] ||
+                settings['consent.marketing'] ||
+                false
+              } ? 0.1 : 0,
+              replaysOnErrorSampleRate: ${
+                settings['consent-marketing'] ||
+                settings['consent.marketing'] ||
+                false
+              } ? 1.0 : 0,
+              integrations: [
+                window.Sentry.browserTracingIntegration(),
+                window.Sentry.replayIntegration()
+              ]
+            };
+
+            // Initialize Sentry
+            window.Sentry.init(defaultConfig);
+
+            // Store original configuration for consent management
+            window.__sentryOriginalConfig = {
+              autoSessionTracking: defaultConfig.autoSessionTracking,
+              sendDefaultPii: defaultConfig.sendDefaultPii,
+              captureUnhandledRejections: defaultConfig.captureUnhandledRejections,
+              tracesSampleRate: defaultConfig.tracesSampleRate,
+              profilesSampleRate: defaultConfig.profilesSampleRate,
+              replaysSessionSampleRate: defaultConfig.replaysSessionSampleRate,
+              replaysOnErrorSampleRate: defaultConfig.replaysOnErrorSampleRate,
+              integrations: defaultConfig.integrations.map(i => i.name || i.constructor.name),
+              beforeBreadcrumb: defaultConfig.beforeBreadcrumb,
+              initialScope: defaultConfig.initialScope
+            };
+
+            window.__sentryManagedComponent = {
+              initialized: true,
+              originalConfig: window.__sentryOriginalConfig,
+              updateConsent: function(newConsentState) {
+                console.log('[Sentry CM] Manual consent update triggered:', newConsentState);
+                if (window.__updateSentryConsent) {
+                  window.__updateSentryConsent(newConsentState);
+                }
+              }
+            };
+
+            console.log('[Sentry CM] Sentry initialized successfully with managed component');
+          };
+          script.onerror = function() {
+            console.error('[Sentry CM] Failed to load Sentry SDK');
+          };
+          document.head.appendChild(script);
         } else {
-          console.warn('[Sentry CM] No existing Sentry instance found. Please initialize Sentry before loading this Managed Component.');
-          console.info('[Sentry CM] Expected: window.Sentry to be available with getCurrentHub() method');
+          console.warn('[Sentry CM] No existing Sentry instance found and no DSN provided.');
+          console.info('[Sentry CM] Expected: window.Sentry to be available with getCurrentHub() method, or sentry-dsn setting to be configured');
         }
       })();
     `);
