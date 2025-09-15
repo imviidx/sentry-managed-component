@@ -4,11 +4,8 @@ import SentryStatus from './components/SentryStatus';
 import SentryRecordingState from './components/SentryRecordingState';
 import EventLogViewer from './components/EventLogViewer';
 import ErrorBoundary from './components/ErrorBoundary';
-import { getZaraz } from 'sentry-zaraz-consent-integration';
+import { getZaraz } from './lib/zaraz';
 import { logGeneralEvent } from './lib/eventLogger';
-
-// Import local zaraz initialization for development
-import './lib/zaraz-local';
 
 const App: React.FC = () => {
   const [isZarazAvailable, setIsZarazAvailable] = useState(false);

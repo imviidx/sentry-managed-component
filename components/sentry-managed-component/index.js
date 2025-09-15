@@ -1,34 +1,4 @@
-import { ComponentSettings, Manager, Client } from '@managed-components/types';
-
-interface ConsentState {
-  functional?: boolean;
-  analytics?: boolean;
-  marketing?: boolean;
-  preferences?: boolean;
-}
-
-let currentConsentState: ConsentState = {};
-
-export default async function (manager: Manager, settings: ComponentSettings) {
-  console.log(
-    '🎯 [SERVER] Sentry Managed Component loading with settings:',
-    Object.keys(settings)
-  );
-
-  // Initialize Sentry consent management
-  manager.addEventListener('clientcreated', ({ client }) => {
-    console.log('[Sentry CM] Client created, settings:', settings);
-
-    // Simple hello world to confirm MC is active
-    client.execute(`console.log("🚀 Hello from Sentry Managed Component!")`);
-    client.execute(
-      `console.log("⚙️ MC Settings:", JSON.stringify(${JSON.stringify(
-        settings
-      )}, null, 2))`
-    );
-
-    // Bridge DOM consent events to WebCM manager events
-    client.execute(`
+var a={};async function s(o,i){console.log("\u{1F3AF} [SERVER] Sentry Managed Component loading with settings:",Object.keys(i)),o.addEventListener("clientcreated",({client:n})=>{console.log("[Sentry CM] Client created, settings:",i),n.execute('console.log("\u{1F680} Hello from Sentry Managed Component!")'),n.execute(`console.log("\u2699\uFE0F MC Settings:", JSON.stringify(${JSON.stringify(i)}, null, 2))`),n.execute(`
       (function() {
         // Listen for DOM consent events and forward to WebCM
         window.addEventListener('consent', function(event) {
@@ -51,9 +21,7 @@ export default async function (manager: Manager, settings: ComponentSettings) {
 
         console.log('[Sentry CM] DOM consent event listener installed');
       })();
-    `);
-
-    client.execute(`
+    `),n.execute(`
       (function() {
         // Check if Sentry is already initialized
         if (typeof window.Sentry !== 'undefined' && window.Sentry.getCurrentHub) {
@@ -97,21 +65,7 @@ export default async function (manager: Manager, settings: ComponentSettings) {
           console.info('[Sentry CM] Expected: window.Sentry to be available with getCurrentHub() method');
         }
       })();
-    `);
-  });
-
-  // Handle consent changes
-  manager.addEventListener('consent', async (event) => {
-    const { client, payload } = event;
-    currentConsentState = payload as ConsentState;
-    updateSentryConsent(client, currentConsentState);
-  });
-
-  // Check for stored consent state on client creation and set up update function
-  manager.addEventListener('clientcreated', ({ client }) => {
-    client.execute(`console.log("CM Settings:", ${JSON.stringify(settings)})`);
-
-    client.execute(`
+    `)}),o.addEventListener("consent",async n=>{let{client:e,payload:t}=n;a=t,r(e,a)}),o.addEventListener("clientcreated",({client:n})=>{n.execute(`console.log("CM Settings:", ${JSON.stringify(i)})`),n.execute(`
       (function() {
         // Check for stored consent state from DOM events
         if (window.__consentState) {
@@ -129,19 +83,11 @@ export default async function (manager: Manager, settings: ComponentSettings) {
           // This will be defined in the consent handler scope
         };
       })();
-    `);
-  });
-
-  // Extract consent update logic into a separate function
-  function updateSentryConsent(client: Client, consentState: ConsentState) {
-    client.execute(
-      `console.log("consentState",${JSON.stringify(consentState)})`
-    );
-    client.execute(`
+    `)});function r(n,e){n.execute(`console.log("consentState",${JSON.stringify(e)})`),n.execute(`
       (function() {
         // Store the update function globally so DOM events can call it
         window.__updateSentryConsent = function(newConsentState) {
-          const consent = newConsentState || ${JSON.stringify(consentState)};
+          const consent = newConsentState || ${JSON.stringify(e)};
 
           if (!window.Sentry || !window.__sentryManagedComponent || !window.__sentryManagedComponent.initialized) {
             console.warn('[Sentry CM] Sentry not properly initialized for consent management');
@@ -259,49 +205,24 @@ export default async function (manager: Manager, settings: ComponentSettings) {
         };
 
         // Call the update function with current consent state
-        window.__updateSentryConsent(${JSON.stringify(consentState)});
+        window.__updateSentryConsent(${JSON.stringify(e)});
       })();
-    `);
-  }
-
-  // Handle pageview events to ensure Sentry context is updated
-  manager.addEventListener('pageview', async (event) => {
-    const { client } = event;
-
-    // Update Sentry user context if available
-    const userId = client.get('user_id');
-    if (userId) {
-      client.execute(`
+    `)}o.addEventListener("pageview",async n=>{let{client:e}=n,t=e.get("user_id");t&&e.execute(`
         if (window.Sentry && window.Sentry.setUser) {
-          window.Sentry.setUser({ id: '${userId}' });
+          window.Sentry.setUser({ id: '${t}' });
         }
-      `);
-    }
-
-    // Set page context
-    client.execute(`
+      `),e.execute(`
       if (window.Sentry && window.Sentry.setTag) {
         window.Sentry.setTag('page.url', window.location.href);
         window.Sentry.setTag('page.title', document.title);
       }
-    `);
-  });
-
-  // Handle custom events and forward them to Sentry
-  manager.addEventListener('event', async (event) => {
-    const { client, payload } = event;
-
-    if (payload.name && currentConsentState.functional) {
-      client.execute(`
+    `)}),o.addEventListener("event",async n=>{let{client:e,payload:t}=n;t.name&&a.functional&&e.execute(`
         if (window.Sentry && window.Sentry.addBreadcrumb) {
           window.Sentry.addBreadcrumb({
-            message: 'Custom event: ${payload.name}',
+            message: 'Custom event: ${t.name}',
             category: 'custom',
             level: 'info',
-            data: ${JSON.stringify(payload)}
+            data: ${JSON.stringify(t)}
           });
         }
-      `);
-    }
-  });
-}
+      `)})}export{s as default};
