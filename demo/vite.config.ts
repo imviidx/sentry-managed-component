@@ -9,8 +9,8 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'demo/index.html'),
-        'without-sentry': resolve(__dirname, 'demo/without-sentry.html'),
+        main: resolve(__dirname, 'index.html'),
+        'without-sentry': resolve(__dirname, 'without-sentry.html'),
       },
     },
   },
