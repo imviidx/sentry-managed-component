@@ -1,0 +1,36 @@
+{
+  "name": "zaraz-consent-tools",
+  "version": "1.0.0",
+  "description": "Local development tools for Zaraz consent management with fake instance and consent dialog",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/POD666/sentry-managed-component.git",
+    "directory": "packages/zaraz-consent-tools"
+  },
+  "keywords": [
+    "zaraz",
+    "consent",
+    "privacy",
+    "local-development",
+    "mock",
+    "fake"
+  ],
+  "author": "POD666",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ]
+}

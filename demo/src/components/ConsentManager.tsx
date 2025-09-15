@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getZaraz } from 'sentry-zaraz-consent-integration';
 import {
-  getZaraz,
   getConsentStatusDemo,
   setConsentDemo,
   DEMO_PURPOSE_MAPPING,

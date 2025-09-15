@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaraz Consent Tools Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .consent-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .control-group {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .control-group h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #545b62;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+        .log-info { color: #007bff; }
+        .log-warn { color: #fd7e14; }
+        .log-error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>🍪 Zaraz Consent Tools Demo</h1>
+    <p>This demo shows how to use the Zaraz Consent Tools package for local development.</p>
+
+    <div class="status" id="status">
+        <h3>Zaraz Status</h3>
+        <div id="status-content">Initializing...</div>
+    </div>
+
+    <div class="consent-controls">
+        <div class="control-group">
+            <h3>Modal Controls</h3>
+            <button onclick="showModal()">Show Consent Modal</button>
+            <button onclick="hideModal()" class="secondary">Hide Modal</button>
+        </div>
+
+        <div class="control-group">
+            <h3>Quick Actions</h3>
+            <button onclick="acceptAll()">Accept All</button>
+            <button onclick="rejectAll()" class="danger">Reject All</button>
+            <button onclick="resetConsent()" class="secondary">Reset Consent</button>
+        </div>
+
+        <div class="control-group">
+            <h3>Individual Purposes</h3>
+            <div id="purpose-controls">Loading...</div>
+        </div>
+
+        <div class="control-group">
+            <h3>Advanced</h3>
+            <button onclick="sendQueuedEvents()">Send Queued Events</button>
+            <button onclick="clearStorage()" class="danger">Clear Storage</button>
+            <button onclick="toggleLogging()" class="secondary">Toggle Logging</button>
+        </div>
+    </div>
+
+    <div>
+        <h3>Console Logs</h3>
+        <div class="logs" id="logs">
+            <div class="log-entry log-info">Logs will appear here...</div>
+        </div>
+        <button onclick="clearLogs()" class="secondary">Clear Logs</button>
+    </div>
+
+    <script type="module">
+        // Import the zaraz consent tools (in a real app, you'd import from the package)
+        // For demo purposes, we'll create a simplified version
+
+        // Mock the zaraz consent tools functionality
+        class DemoZarazConsentTools {
+            constructor() {
+                this.consent = {
+                    APIReady: false,
+                    modal: false,
+                    purposes: {
+                        functional: { id: 'functional', name: 'Functional', description: 'Essential functionality', order: 1, required: true },
+                        analytics: { id: 'analytics', name: 'Analytics', description: 'Usage analytics', order: 2 },
+                        marketing: { id: 'marketing', name: 'Marketing', description: 'Advertising', order: 3 },
+                        preferences: { id: 'preferences', name: 'Preferences', description: 'User preferences', order: 4 }
+                    },
+                    _consent: {
+                        functional: true,
+                        analytics: false,
+                        marketing: false,
+                        preferences: false
+                    },
+
+                    get: (purposeId) => {
+                        const result = this._consent[purposeId];
+                        this.log(`Get consent for "${purposeId}": ${result}`);
+                        return result;
+                    },
+
+                    set: (preferences) => {
+                        this.log('Setting consent', preferences);
+                        Object.assign(this._consent, preferences);
+                        this.saveToStorage();
+                        this.dispatchEvent('zarazConsentChoicesUpdated');
+                        updateDisplay();
+                    },
+
+                    getAll: () => {
+                        this.log('Get all consent', this._consent);
+                        return { ...this._consent };
+                    },
+
+                    setAll: (status) => {
+                        this.log(`Setting all consent to: ${status}`);
+                        Object.keys(this._consent).forEach(key => {
+                            if (key !== 'functional' || status) { // functional always true unless explicitly false
+                                this._consent[key] = status;
+                            }
+                        });
+                        this.saveToStorage();
+                        this.dispatchEvent('zarazConsentChoicesUpdated');
+                        updateDisplay();
+                    },
+
+                    getAllCheckboxes: () => this.getAll(),
+                    setCheckboxes: (status) => this.set(status),
+                    setAllCheckboxes: (status) => this.setAll(status),
+
+                    sendQueuedEvents: () => {
+                        this.log('Sending queued events');
+                    }
+                };
+
+                this.showConsentModal = () => {
+                    this.log('Showing consent modal');
+                    this.consent.modal = true;
+                    // In real implementation, this would show a modal
+                    alert('🍪 Consent Modal\n\nThis would show a real consent modal in the actual implementation.');
+                };
+
+                // Initialize
+                this.loadFromStorage();
+                setTimeout(() => {
+                    this.consent.APIReady = true;
+                    this.dispatchEvent('zarazConsentAPIReady');
+                    this.log('Consent API is ready');
+                    updateDisplay();
+                }, 100);
+            }
+
+            log(message, data) {
+                const logEntry = `[Zaraz Consent Tools] ${message}`;
+                console.log(logEntry, data || '');
+
+                // Add to demo logs
+                const logsContainer = document.getElementById('logs');
+                const logElement = document.createElement('div');
+                logElement.className = 'log-entry log-info';
+                logElement.textContent = logEntry + (data ? ` ${JSON.stringify(data)}` : '');
+                logsContainer.appendChild(logElement);
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
+
+            dispatchEvent(eventName) {
+                const event = new CustomEvent(eventName);
+                document.dispatchEvent(event);
+                this.log(`Event dispatched: ${eventName}`);
+            }
+
+            saveToStorage() {
+                localStorage.setItem('demo_consent', JSON.stringify(this.consent._consent));
+            }
+
+            loadFromStorage() {
+                const saved = localStorage.getItem('demo_consent');
+                if (saved) {
+                    try {
+                        Object.assign(this.consent._consent, JSON.parse(saved));
+                        this.log('Loaded consent from storage', this.consent._consent);
+                    } catch (e) {
+                        this.log('Failed to load consent from storage', e);
+                    }
+                }
+            }
+
+            clearStorage() {
+                localStorage.removeItem('demo_consent');
+                this.log('Storage cleared');
+            }
+        }
+
+        // Initialize demo
+        const zaraz = new DemoZarazConsentTools();
+        window.zaraz = zaraz;
+
+        // Event listeners
+        document.addEventListener('zarazConsentAPIReady', () => {
+            console.log('🎉 Zaraz Consent API Ready!');
+        });
+
+        document.addEventListener('zarazConsentChoicesUpdated', () => {
+            console.log('🔄 Consent choices updated!');
+        });
+
+        // Global functions for buttons
+        window.showModal = () => zaraz.showConsentModal();
+        window.hideModal = () => {
+            zaraz.consent.modal = false;
+            zaraz.log('Hiding consent modal');
+        };
+
+        window.acceptAll = () => zaraz.consent.setAll(true);
+        window.rejectAll = () => zaraz.consent.setAll(false);
+
+        window.resetConsent = () => {
+            zaraz.consent.set({
+                functional: true,
+                analytics: false,
+                marketing: false,
+                preferences: false
+            });
+        };
+
+        window.sendQueuedEvents = () => zaraz.consent.sendQueuedEvents();
+        window.clearStorage = () => {
+            zaraz.clearStorage();
+            location.reload();
+        };
+
+        window.toggleLogging = () => {
+            zaraz.log('Logging toggle (demo only - real implementation would toggle console output)');
+        };
+
+        window.clearLogs = () => {
+            document.getElementById('logs').innerHTML = '<div class="log-entry log-info">Logs cleared...</div>';
+        };
+
+        window.togglePurpose = (purposeId) => {
+            const current = zaraz.consent.get(purposeId);
+            zaraz.consent.set({ [purposeId]: !current });
+        };
+
+        function updateDisplay() {
+            // Update status
+            const statusContent = document.getElementById('status-content');
+            const consent = zaraz.consent.getAll();
+
+            statusContent.innerHTML = `
+                <strong>API Ready:</strong> ${zaraz.consent.APIReady ? '✅ Yes' : '❌ No'}<br>
+                <strong>Modal Visible:</strong> ${zaraz.consent.modal ? '✅ Yes' : '❌ No'}<br>
+                <strong>Consent Status:</strong><br>
+                ${Object.entries(consent).map(([purpose, granted]) =>
+                    `&nbsp;&nbsp;${purpose}: ${granted ? '✅ Granted' : '❌ Denied'}`
+                ).join('<br>')}
+            `;
+
+            // Update purpose controls
+            const purposeControls = document.getElementById('purpose-controls');
+            purposeControls.innerHTML = Object.entries(zaraz.consent.purposes).map(([id, purpose]) => {
+                const granted = consent[id];
+                const disabled = purpose.required ? 'disabled' : '';
+                return `
+                    <button onclick="togglePurpose('${id}')" ${disabled}
+                            style="background: ${granted ? '#28a745' : '#dc3545'}; width: 100%; margin: 2px 0;">
+                        ${purpose.name}: ${granted ? 'ON' : 'OFF'}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // Initial display update
+        updateDisplay();
+
+        // Update display when consent changes
+        document.addEventListener('zarazConsentChoicesUpdated', updateDisplay);
+    </script>
+</body>
+</html>
