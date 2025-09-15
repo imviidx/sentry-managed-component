@@ -39,7 +39,7 @@ The `SentryZarazIntegration` now supports configurable purpose mappings, allowin
 By default, the integration uses these purpose IDs:
 
 ```typescript
-const DEFAULT_PURPOSE_MAPPING = {
+const DEMO_PURPOSE_MAPPING = {
   functional: 'lFDj', // Functional (Essential/Necessary)
   analytics: 'yybb', // Analytics (Performance & Statistics)
   marketing: 'rlae', // Marketing (Advertising & Personalization)
@@ -160,31 +160,6 @@ const consentStatus = getConsentStatus();
 
 // Using custom purpose mapping
 const customConsentStatus = getConsentStatus(customPurposeMapping);
-```
-
-### setConsent
-
-```typescript
-import { setConsent } from './lib/zaraz';
-
-// Using default purpose mapping
-setConsent({
-  functional: true,
-  analytics: false,
-  marketing: false,
-  preferences: true,
-});
-
-// Using custom purpose mapping
-setConsent(
-  {
-    functional: true,
-    analytics: false,
-    marketing: false,
-    preferences: true,
-  },
-  customPurposeMapping
-);
 ```
 
 ## Purpose Mapping Interface

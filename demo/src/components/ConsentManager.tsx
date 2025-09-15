@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   getZaraz,
   getConsentStatusDemo,
-  setConsentDemo,
   DEMO_PURPOSE_MAPPING,
 } from '../lib/zaraz';
 import { logZarazEvent, logConsentEvent } from '../lib/eventLogger';
@@ -127,22 +126,6 @@ const ConsentManager: React.FC = () => {
     consentStatus.consentState,
     isZarazInitialized,
   ]);
-
-  const handleToggleConsent = (
-    type: keyof typeof consentStatus.consentState
-  ) => {
-    const newValue = !consentStatus.consentState[type];
-    logConsentEvent('Consent updated', {
-      type,
-      granted: newValue,
-      changed: 'manual',
-    });
-
-    setConsentDemo({
-      ...consentStatus.consentState,
-      [type]: newValue,
-    });
-  };
 
   const handleShowConsentModal = () => {
     const zaraz = getZaraz();
@@ -294,25 +277,6 @@ const ConsentManager: React.FC = () => {
             {Object.entries(consentStatus.consentState).map(
               ([type, granted]) => (
                 <div key={type} style={{ marginBottom: '0.5rem' }}>
-                  <button
-                    onClick={() =>
-                      handleToggleConsent(
-                        type as keyof typeof consentStatus.consentState
-                      )
-                    }
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      backgroundColor: granted ? '#dc3545' : '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      marginRight: '0.5rem',
-                      minWidth: '80px',
-                    }}
-                  >
-                    {granted ? 'Revoke' : 'Grant'}
-                  </button>
                   <span
                     style={{ textTransform: 'capitalize', fontWeight: 'bold' }}
                   >

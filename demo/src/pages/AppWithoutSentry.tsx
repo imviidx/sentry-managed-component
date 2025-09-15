@@ -121,12 +121,6 @@ const AppWithoutSentry: React.FC = () => {
         </div>
       </div>
 
-      <ErrorBoundary>
-        <EventLogViewer />
-        <SentryStatus isZarazAvailable={isZarazAvailable} />
-        <ConsentManager />
-      </ErrorBoundary>
-
       <div style={{ marginBottom: '2rem' }}>
         <h2>Sentry Recording State</h2>
         <p>Current Sentry recording capabilities based on consent status:</p>

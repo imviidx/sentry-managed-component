@@ -3,8 +3,8 @@
 
 // Test 1: Default purpose mapping
 console.log('=== Testing Default Purpose Mapping ===');
-import('./lib/zaraz.js').then(({ isSentryManagedComponentEnabled, getConsentStatus, setConsent, DEFAULT_PURPOSE_MAPPING }) => {
-  console.log('Default purpose mapping:', DEFAULT_PURPOSE_MAPPING);
+import('./lib/zaraz.js').then(({ isSentryManagedComponentEnabled, getConsentStatus, DEMO_PURPOSE_MAPPING }) => {
+  console.log('Default purpose mapping:', DEMO_PURPOSE_MAPPING);
 
   // Test with default mapping
   const defaultConsent = isSentryManagedComponentEnabled();
@@ -16,7 +16,7 @@ import('./lib/zaraz.js').then(({ isSentryManagedComponentEnabled, getConsentStat
 
 // Test 2: Custom purpose mapping
 console.log('=== Testing Custom Purpose Mapping ===');
-import('./lib/zaraz.js').then(({ isSentryManagedComponentEnabled, getConsentStatus, setConsent }) => {
+import('./lib/zaraz.js').then(({ isSentryManagedComponentEnabled, getConsentStatus, getZaraz }) => {
   const customMapping = {
     functional: 'test-functional',
     analytics: 'test-analytics',
@@ -33,14 +33,17 @@ import('./lib/zaraz.js').then(({ isSentryManagedComponentEnabled, getConsentStat
   const customStatus = getConsentStatus(customMapping);
   console.log('Custom consent status:', customStatus);
 
-  // Test setting consent with custom mapping
-  setConsent({
-    functional: true,
-    analytics: false,
-    marketing: false,
-    preferences: true,
-  }, customMapping);
-  console.log('Set consent with custom mapping');
+  // Test setting consent directly with Zaraz API (bypass removed setConsent wrapper)
+  const zaraz = getZaraz();
+  if (zaraz?.consent?.set) {
+    zaraz.consent.set({
+      'test-functional': true,
+      'test-analytics': false,
+      'test-marketing': false,
+      'test-preferences': true,
+    });
+    console.log('Set consent directly with Zaraz API');
+  }
 });
 
 // Test 3: Integration usage
